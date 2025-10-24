@@ -1,0 +1,295 @@
+.playlist-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.playlist-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.playlist-cover-large {
+  flex-shrink: 0;
+}
+
+.playlist-cover-large img {
+  width: 250px;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.playlist-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.playlist-type {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+}
+
+.playlist-info h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin: 0 0 1rem 0;
+  color: #333;
+  line-height: 1.1;
+}
+
+.playlist-description {
+  color: #666;
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  max-width: 500px;
+}
+
+.playlist-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.owner {
+  font-weight: 600;
+  color: #333;
+}
+
+.playlist-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.play-button {
+  background: #1db954;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.play-button:hover {
+  background: #1ed760;
+  transform: scale(1.05);
+}
+
+.more-actions {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.more-actions:hover {
+  color: #333;
+}
+
+.songs-table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 50px 1fr 1fr 80px;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-number {
+  text-align: center;
+}
+
+.header-duration {
+  text-align: center;
+}
+
+.song-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 1fr 80px;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+  align-items: center;
+}
+
+.song-row:hover {
+  background: #f8f8f8;
+}
+
+.song-row:last-child {
+  border-bottom: none;
+}
+
+.song-number {
+  position: relative;
+  text-align: center;
+  color: #666;
+}
+
+.number {
+  transition: opacity 0.2s;
+}
+
+.play-cell-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  color: #1db954;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.song-row:hover .number {
+  opacity: 0;
+}
+
+.song-row:hover .play-cell-btn {
+  opacity: 1;
+}
+
+.song-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.song-info img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.song-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.song-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.song-album {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.song-duration {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.empty-playlist {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+}
+
+.empty-playlist .empty-icon {
+  font-size: 4rem;
+  color: #ddd;
+  margin-bottom: 1rem;
+}
+
+.empty-playlist h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.empty-playlist p {
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .playlist-page {
+    padding: 1rem;
+  }
+
+  .playlist-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .playlist-cover-large img {
+    width: 200px;
+    height: 200px;
+  }
+
+  .playlist-info h1 {
+    font-size: 2rem;
+  }
+
+  .table-header {
+    grid-template-columns: 40px 1fr 60px;
+  }
+
+  .song-row {
+    grid-template-columns: 40px 1fr 60px;
+  }
+
+  .header-album,
+  .song-album {
+    display: none;
+  }
+
+  .song-info {
+    gap: 0.5rem;
+  }
+
+  .song-info img {
+    width: 35px;
+    height: 35px;
+  }
+
+  .song-info h4 {
+    font-size: 0.9rem;
+  }
+
+  .song-info p {
+    font-size: 0.8rem;
+  }
+}
