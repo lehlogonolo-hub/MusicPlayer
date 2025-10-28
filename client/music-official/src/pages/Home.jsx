@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useMusic } from '../contexts/MusicContext';
-import { FaPlay, FaHeart, FaPlus } from 'react-icons/fa';
+import { FaPlay, FaHeart, FaPlus, FaGlobe, FaUser, FaFilter } from 'react-icons/fa';
 import './Home.css';
 
 const Home = () => {
@@ -10,22 +10,24 @@ const Home = () => {
   const [newReleases, setNewReleases] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState('all'); // all, api, user
   const { playSong } = useMusic();
 
   useEffect(() => {
     fetchHomeData();
-  }, []);
+  }, [sourceFilter]);
 
   const fetchHomeData = async () => {
     try {
       const [songsRes, recommendationsRes] = await Promise.all([
-        axios.get('/api/music/songs?limit=10&sortBy=plays&order=desc'),
+        axios.get(`/api/music/songs?limit=12&source=${sourceFilter}`),
         axios.get('/api/music/recommendations'),
       ]);
 
-      setFeaturedSongs(songsRes.data.songs.slice(0, 5));
-      setNewReleases(songsRes.data.songs.slice(5, 10));
-      setRecommendations(recommendationsRes.data);
+      const allSongs = songsRes.data.data.songs;
+      setFeaturedSongs(allSongs.slice(0, 6));
+      setNewReleases(allSongs.slice(6, 12));
+      setRecommendations(recommendationsRes.data.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching home data:', error);
@@ -37,15 +39,55 @@ const Home = () => {
     playSong(song, list, index);
   };
 
+  const getSourceBadge = (source) => {
+    const badges = {
+      jamendo: { label: 'Jamendo', color: '#ff6b6b', icon: FaGlobe },
+      deezer: { label: 'Deezer', color: '#4ecdc4', icon: FaGlobe },
+      user: { label: 'User Upload', color: '#1db954', icon: FaUser },
+      sample: { label: 'Sample', color: '#666', icon: FaGlobe }
+    };
+    
+    const badge = badges[source] || { label: source, color: '#999', icon: FaGlobe };
+    const Icon = badge.icon;
+    
+    return (
+      <span className="source-badge" style={{ backgroundColor: badge.color }}>
+        <Icon className="badge-icon" />
+        {badge.label}
+      </span>
+    );
+  };
+
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="loading">Loading music...</div>;
   }
 
   return (
     <div className="home">
       <section className="hero">
         <h1>Discover New Music</h1>
-        <p>Stream millions of songs, create playlists, and share with friends</p>
+        <p>Stream from multiple sources and share your own creations</p>
+        
+        <div className="source-filters">
+          <button 
+            className={`filter-btn ${sourceFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setSourceFilter('all')}
+          >
+            <FaFilter /> All Sources
+          </button>
+          <button 
+            className={`filter-btn ${sourceFilter === 'api' ? 'active' : ''}`}
+            onClick={() => setSourceFilter('api')}
+          >
+            <FaGlobe /> Streaming
+          </button>
+          <button 
+            className={`filter-btn ${sourceFilter === 'user' ? 'active' : ''}`}
+            onClick={() => setSourceFilter('user')}
+          >
+            <FaUser /> Community
+          </button>
+        </div>
       </section>
 
       <section className="section">
@@ -55,7 +97,7 @@ const Home = () => {
         </div>
         <div className="song-grid">
           {featuredSongs.map((song, index) => (
-            <div key={song._id} className="song-card">
+            <div key={song.id} className="song-card">
               <div className="song-cover">
                 <img src={song.coverArt || '/default-cover.jpg'} alt={song.title} />
                 <button 
@@ -64,10 +106,15 @@ const Home = () => {
                 >
                   <FaPlay />
                 </button>
+                {getSourceBadge(song.source)}
               </div>
               <div className="song-info">
                 <h4>{song.title}</h4>
                 <p>{song.artist}</p>
+                <span className="song-meta">
+                  {song.genre} • {Math.floor(song.duration / 60)}:
+                  {(song.duration % 60).toString().padStart(2, '0')}
+                </span>
               </div>
               <div className="song-actions">
                 <button className="action-btn">
@@ -89,12 +136,13 @@ const Home = () => {
         </div>
         <div className="song-list">
           {newReleases.map((song, index) => (
-            <div key={song._id} className="song-row">
+            <div key={song.id} className="song-row">
               <div className="song-main">
                 <img src={song.coverArt || '/default-cover.jpg'} alt={song.title} />
                 <div>
                   <h4>{song.title}</h4>
                   <p>{song.artist}</p>
+                  {getSourceBadge(song.source)}
                 </div>
               </div>
               <div className="song-meta">
@@ -118,7 +166,7 @@ const Home = () => {
         </div>
         <div className="song-grid">
           {recommendations.slice(0, 6).map((song, index) => (
-            <div key={song._id} className="song-card">
+            <div key={song.id} className="song-card">
               <div className="song-cover">
                 <img src={song.coverArt || '/default-cover.jpg'} alt={song.title} />
                 <button 
@@ -127,6 +175,7 @@ const Home = () => {
                 >
                   <FaPlay />
                 </button>
+                {getSourceBadge(song.source)}
               </div>
               <div className="song-info">
                 <h4>{song.title}</h4>
@@ -135,6 +184,16 @@ const Home = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="upload-cta">
+        <div className="cta-content">
+          <h3>Share Your Music</h3>
+          <p>Upload your own tracks and join our community of music creators</p>
+          <Link to="/upload" className="cta-button">
+            <FaPlus /> Upload Your Song
+          </Link>
         </div>
       </section>
     </div>

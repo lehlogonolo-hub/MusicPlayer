@@ -17,9 +17,12 @@ const Profile = () => {
     songsPlayed: 0,
     favoriteSongs: 0,
     playlistsCreated: 0,
-    songsUploaded: 0
+    songsUploaded: 0,
+    listeningTime: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [favoriteSongs, setFavoriteSongs] = useState([]);
+  const [uploadedSongs, setUploadedSongs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,43 +33,53 @@ const Profile = () => {
 
   const fetchProfileData = async () => {
     try {
-      // In a real app, you'd fetch this from your API
-      setStats({
-        songsPlayed: 124,
-        favoriteSongs: 23,
-        playlistsCreated: 5,
-        songsUploaded: 8
+      const response = await axios.get(`/api/users/${user.id}/profile`);
+      const data = response.data.data;
+      
+      setStats(data.user.stats);
+      setRecentActivity(data.recentActivity || []);
+      setFavoriteSongs(data.favoriteSongs || []);
+      setUploadedSongs(data.uploadedSongs || []);
+      
+      setProfileData({
+        displayName: data.user.profile.displayName || user.username,
+        bio: data.user.profile.bio || '',
+        avatar: data.user.profile.avatar || ''
       });
-
-      setRecentActivity([
-        { type: 'play', song: 'Blinding Lights', artist: 'The Weeknd', time: '2 hours ago' },
-        { type: 'like', song: 'Save Your Tears', artist: 'The Weeknd', time: '1 day ago' },
-        { type: 'create', playlist: 'Workout Mix', time: '2 days ago' },
-        { type: 'upload', song: 'My New Track', time: '1 week ago' }
-      ]);
-
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      // Fallback to user data from context
+      setStats(user.stats || {
+        songsPlayed: 0,
+        favoriteSongs: 0,
+        playlistsCreated: 0,
+        songsUploaded: 0,
+        listeningTime: 0
+      });
+      
       setProfileData({
         displayName: user.profile?.displayName || user.username,
         bio: user.profile?.bio || '',
         avatar: user.profile?.avatar || ''
       });
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
     }
     setLoading(false);
   };
 
   const handleSaveProfile = async () => {
     try {
-      // Update user profile
+      const response = await axios.put(`/api/users/${user.id}/profile`, profileData);
+      
+      // Update user context
       updateUser({
-        profile: profileData
+        profile: profileData,
+        stats: response.data.data.user.stats
       });
       
       setIsEditing(false);
-      // In a real app, you'd make an API call to save the profile
     } catch (error) {
       console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
     }
   };
 
@@ -91,6 +104,13 @@ const Profile = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const formatListeningTime = (minutes) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
   };
 
   if (loading) {
@@ -195,6 +215,13 @@ const Profile = () => {
             <p>Uploads</p>
           </div>
         </div>
+        <div className="stat-card">
+          <FaHistory className="stat-icon" />
+          <div className="stat-info">
+            <h3>{formatListeningTime(stats.listeningTime)}</h3>
+            <p>Listening Time</p>
+          </div>
+        </div>
       </div>
 
       <div className="profile-content">
@@ -215,13 +242,13 @@ const Profile = () => {
             className={`tab ${activeTab === 'favorites' ? 'active' : ''}`}
             onClick={() => setActiveTab('favorites')}
           >
-            Favorites
+            Favorites ({favoriteSongs.length})
           </button>
           <button 
-            className={`tab ${activeTab === 'playlists' ? 'active' : ''}`}
-            onClick={() => setActiveTab('playlists')}
+            className={`tab ${activeTab === 'uploads' ? 'active' : ''}`}
+            onClick={() => setActiveTab('uploads')}
           >
-            My Playlists
+            My Uploads ({uploadedSongs.length})
           </button>
         </div>
 
@@ -233,15 +260,25 @@ const Profile = () => {
               <div className="overview-stats">
                 <div className="overview-stat">
                   <span className="stat-label">Member since:</span>
-                  <span className="stat-value">January 2024</span>
+                  <span className="stat-value">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
                 <div className="overview-stat">
                   <span className="stat-label">Favorite genre:</span>
-                  <span className="stat-value">Pop</span>
+                  <span className="stat-value">
+                    {user.preferences?.genres?.[0] || 'Not set'}
+                  </span>
                 </div>
                 <div className="overview-stat">
-                  <span className="stat-label">Listening time:</span>
-                  <span className="stat-value">42 hours</span>
+                  <span className="stat-label">Total listening time:</span>
+                  <span className="stat-value">
+                    {formatListeningTime(stats.listeningTime)}
+                  </span>
+                </div>
+                <div className="overview-stat">
+                  <span className="stat-label">Songs discovered:</span>
+                  <span className="stat-value">{stats.songsPlayed}</span>
                 </div>
               </div>
             </div>
@@ -250,41 +287,87 @@ const Profile = () => {
           {activeTab === 'activity' && (
             <div className="activity-feed">
               <h3>Recent Activity</h3>
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="activity-item">
-                  <div className="activity-icon">
-                    {activity.type === 'play' && <FaHistory />}
-                    {activity.type === 'like' && <FaHeart />}
-                    {activity.type === 'create' && <FaMusic />}
-                    {activity.type === 'upload' && <FaUpload />}
-                  </div>
-                  <div className="activity-details">
-                    <p>
-                      {activity.type === 'play' && `Played "${activity.song}" by ${activity.artist}`}
-                      {activity.type === 'like' && `Liked "${activity.song}" by ${activity.artist}`}
-                      {activity.type === 'create' && `Created playlist "${activity.playlist}"`}
-                      {activity.type === 'upload' && `Uploaded "${activity.song}"`}
-                    </p>
-                    <span className="activity-time">{activity.time}</span>
-                  </div>
+              {recentActivity.length === 0 ? (
+                <div className="empty-state">
+                  <p>No recent activity yet. Start listening to music!</p>
                 </div>
-              ))}
+              ) : (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="activity-item">
+                    <div className="activity-icon">
+                      <FaHistory />
+                    </div>
+                    <div className="activity-details">
+                      <p>Played "{activity.songTitle}" by {activity.artist}</p>
+                      <span className="activity-time">
+                        {new Date(activity.playedAt).toLocaleDateString()} at{' '}
+                        {new Date(activity.playedAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
           {activeTab === 'favorites' && (
             <div className="favorites">
-              <h3>Favorite Songs</h3>
-              <p>Your favorite songs will appear here.</p>
-              {/* In a real app, you'd map through favorite songs */}
+              <h3>Favorite Songs ({favoriteSongs.length})</h3>
+              {favoriteSongs.length === 0 ? (
+                <div className="empty-state">
+                  <FaHeart className="empty-icon" />
+                  <p>No favorite songs yet. Start liking songs to see them here!</p>
+                </div>
+              ) : (
+                <div className="songs-list">
+                  {favoriteSongs.map((fav, index) => (
+                    <div key={index} className="song-row">
+                      <div className="song-main">
+                        <div className="song-cover-small">
+                          <FaMusic />
+                        </div>
+                        <div>
+                          <h4>{fav.songTitle}</h4>
+                          <p>{fav.artist}</p>
+                          <small>Added {new Date(fav.addedAt).toLocaleDateString()}</small>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {activeTab === 'playlists' && (
-            <div className="playlists">
-              <h3>Your Playlists</h3>
-              <p>Your created playlists will appear here.</p>
-              {/* In a real app, you'd map through user's playlists */}
+          {activeTab === 'uploads' && (
+            <div className="uploads">
+              <h3>My Uploads ({uploadedSongs.length})</h3>
+              {uploadedSongs.length === 0 ? (
+                <div className="empty-state">
+                  <FaUpload className="empty-icon" />
+                  <p>No uploads yet. Share your first song with the community!</p>
+                </div>
+              ) : (
+                <div className="songs-list">
+                  {uploadedSongs.map((upload, index) => (
+                    <div key={index} className="song-row">
+                      <div className="song-main">
+                        <div className="song-cover-small">
+                          <FaMusic />
+                        </div>
+                        <div>
+                          <h4>{upload.title}</h4>
+                          <p>{upload.artist}</p>
+                          <small>Uploaded {new Date(upload.uploadedAt).toLocaleDateString()}</small>
+                        </div>
+                      </div>
+                      <div className="song-actions">
+                        <span className="upload-badge">Your Upload</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

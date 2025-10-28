@@ -1,92 +1,111 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useMusic } from '../contexts/MusicContext';
-import { 
-  FaSave, 
-  FaBell, 
-  FaVolumeUp, 
-  FaPalette, 
-  FaTrash, 
-  FaEye, 
-  FaEyeSlash,
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useMusic } from "../contexts/MusicContext";
+import {
+  FaSave,
+  FaBell,
+  FaVolumeUp,
+  FaPalette,
+  FaTrash,
   FaUser,
   FaLock,
-  FaCog
-} from 'react-icons/fa';
-import './Settings.css';
+  FaCheck,
+} from "react-icons/fa";
+import "./Settings.css";
 
 const Settings = () => {
-  const { user, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const { volume, setVolume } = useMusic();
-  const [activeSection, setActiveSection] = useState('account');
-  const [settings, setSettings] = useState({
-    // Account settings
-    email: user?.email || '',
-    username: user?.username || '',
-    
-    // Privacy settings
-    privateMode: false,
-    showListeningActivity: true,
-    allowTracking: true,
-    
-    // Notification settings
-    emailNotifications: true,
-    pushNotifications: true,
-    newReleases: true,
-    playlistUpdates: false,
-    
-    // Audio settings
-    audioQuality: 'high', // low, medium, high
-    crossfade: false,
-    crossfadeDuration: 5,
-    normalizeVolume: true,
-    
-    // Appearance settings
-    theme: 'light', // light, dark, auto
-    language: 'en',
-    reduceAnimations: false
-  });
+  const [activeSection, setActiveSection] = useState("account");
+  const [settings, setSettings] = useState({});
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      // Initialize settings from user data
+      setSettings(
+        user.settings || {
+          theme: "light",
+          volume: 0.7,
+          audioQuality: "high",
+          crossfade: false,
+          crossfadeDuration: 5,
+          normalizeVolume: true,
+          privateMode: false,
+          showListeningActivity: true,
+          emailNotifications: true,
+          pushNotifications: true,
+        }
+      );
+      setLoading(false);
+    }
+  }, [user]);
 
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     setSaved(false);
   };
 
   const handleSaveSettings = async () => {
     try {
-      // In a real app, you'd make an API call to save settings
-      console.log('Saving settings:', settings);
+      const response = await axios.put(
+        `/api/users/${user.id}/settings`,
+        settings
+      );
+
+      // Update user context
+      updateUser({
+        settings: response.data.data.settings,
+      });
+
+      // Apply theme if changed
+      if (settings.theme) {
+        document.documentElement.setAttribute("data-theme", settings.theme);
+      }
+
+      // Apply volume if changed
+      if (settings.volume !== undefined) {
+        setVolume(settings.volume);
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings. Please try again.");
     }
   };
 
   const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // In a real app, you'd make an API call to delete the account
-      console.log('Account deletion requested');
-      logout();
+    if (
+      window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      )
+    ) {
+      // Implementation for account deletion
+      console.log("Account deletion requested");
     }
   };
 
   const handleExportData = () => {
-    // In a real app, you'd generate and download user data
-    alert('Data export feature coming soon!');
+    alert("Data export feature coming soon!");
   };
 
   const sections = [
-    { id: 'account', label: 'Account', icon: FaUser },
-    { id: 'privacy', label: 'Privacy', icon: FaLock },
-    { id: 'notifications', label: 'Notifications', icon: FaBell },
-    { id: 'audio', label: 'Audio', icon: FaVolumeUp },
-    { id: 'appearance', label: 'Appearance', icon: FaPalette }
+    { id: "account", label: "Account", icon: FaUser },
+    { id: "privacy", label: "Privacy", icon: FaLock },
+    { id: "notifications", label: "Notifications", icon: FaBell },
+    { id: "audio", label: "Audio", icon: FaVolumeUp },
+    { id: "appearance", label: "Appearance", icon: FaPalette },
   ];
+
+  if (loading) {
+    return <div className="loading">Loading settings...</div>;
+  }
 
   return (
     <div className="settings">
@@ -97,12 +116,14 @@ const Settings = () => {
 
       <div className="settings-layout">
         <div className="settings-sidebar">
-          {sections.map(section => {
+          {sections.map((section) => {
             const Icon = section.icon;
             return (
               <button
                 key={section.id}
-                className={`sidebar-item ${activeSection === section.id ? 'active' : ''}`}
+                className={`sidebar-item ${
+                  activeSection === section.id ? "active" : ""
+                }`}
                 onClick={() => setActiveSection(section.id)}
               >
                 <Icon className="sidebar-icon" />
@@ -113,20 +134,21 @@ const Settings = () => {
         </div>
 
         <div className="settings-content">
-          {activeSection === 'account' && (
+          {activeSection === "account" && (
             <div className="settings-section">
               <h2>Account Settings</h2>
-              
+
               <div className="setting-group">
                 <label className="setting-label">Email Address</label>
                 <input
                   type="email"
                   value={settings.email}
-                  onChange={(e) => handleSettingChange('email', e.target.value)}
+                  onChange={(e) => handleSettingChange("email", e.target.value)}
                   className="setting-input"
                 />
                 <p className="setting-description">
-                  Your email address is used for account recovery and notifications.
+                  Your email address is used for account recovery and
+                  notifications.
                 </p>
               </div>
 
@@ -135,7 +157,9 @@ const Settings = () => {
                 <input
                   type="text"
                   value={settings.username}
-                  onChange={(e) => handleSettingChange('username', e.target.value)}
+                  onChange={(e) =>
+                    handleSettingChange("username", e.target.value)
+                  }
                   className="setting-input"
                 />
                 <p className="setting-description">
@@ -146,10 +170,16 @@ const Settings = () => {
               <div className="setting-group">
                 <h3>Data Management</h3>
                 <div className="setting-actions">
-                  <button onClick={handleExportData} className="action-btn secondary">
+                  <button
+                    onClick={handleExportData}
+                    className="action-btn secondary"
+                  >
                     Export My Data
                   </button>
-                  <button onClick={handleDeleteAccount} className="action-btn danger">
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="action-btn danger"
+                  >
                     <FaTrash /> Delete Account
                   </button>
                 </div>
@@ -160,10 +190,10 @@ const Settings = () => {
             </div>
           )}
 
-          {activeSection === 'privacy' && (
+          {activeSection === "privacy" && (
             <div className="settings-section">
               <h2>Privacy Settings</h2>
-              
+
               <div className="setting-group">
                 <div className="toggle-setting">
                   <div className="toggle-info">
@@ -176,7 +206,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.privateMode}
-                      onChange={(e) => handleSettingChange('privateMode', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("privateMode", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -186,7 +218,9 @@ const Settings = () => {
               <div className="setting-group">
                 <div className="toggle-setting">
                   <div className="toggle-info">
-                    <label className="setting-label">Show Listening Activity</label>
+                    <label className="setting-label">
+                      Show Listening Activity
+                    </label>
                     <p className="setting-description">
                       Allow others to see what you're listening to
                     </p>
@@ -195,7 +229,12 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.showListeningActivity}
-                      onChange={(e) => handleSettingChange('showListeningActivity', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "showListeningActivity",
+                          e.target.checked
+                        )
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -214,7 +253,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.allowTracking}
-                      onChange={(e) => handleSettingChange('allowTracking', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("allowTracking", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -223,10 +264,10 @@ const Settings = () => {
             </div>
           )}
 
-          {activeSection === 'notifications' && (
+          {activeSection === "notifications" && (
             <div className="settings-section">
               <h2>Notification Settings</h2>
-              
+
               <div className="setting-group">
                 <div className="toggle-setting">
                   <div className="toggle-info">
@@ -239,7 +280,12 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.emailNotifications}
-                      onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "emailNotifications",
+                          e.target.checked
+                        )
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -258,7 +304,12 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.pushNotifications}
-                      onChange={(e) => handleSettingChange('pushNotifications', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "pushNotifications",
+                          e.target.checked
+                        )
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -277,7 +328,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.newReleases}
-                      onChange={(e) => handleSettingChange('newReleases', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("newReleases", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -296,7 +349,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.playlistUpdates}
-                      onChange={(e) => handleSettingChange('playlistUpdates', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("playlistUpdates", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -305,10 +360,10 @@ const Settings = () => {
             </div>
           )}
 
-          {activeSection === 'audio' && (
+          {activeSection === "audio" && (
             <div className="settings-section">
               <h2>Audio Settings</h2>
-              
+
               <div className="setting-group">
                 <label className="setting-label">Volume Level</label>
                 <div className="volume-control">
@@ -321,7 +376,9 @@ const Settings = () => {
                     onChange={(e) => setVolume(parseFloat(e.target.value))}
                     className="volume-slider"
                   />
-                  <span className="volume-value">{Math.round(volume * 100)}%</span>
+                  <span className="volume-value">
+                    {Math.round(volume * 100)}%
+                  </span>
                 </div>
               </div>
 
@@ -329,7 +386,9 @@ const Settings = () => {
                 <label className="setting-label">Audio Quality</label>
                 <select
                   value={settings.audioQuality}
-                  onChange={(e) => handleSettingChange('audioQuality', e.target.value)}
+                  onChange={(e) =>
+                    handleSettingChange("audioQuality", e.target.value)
+                  }
                   className="setting-select"
                 >
                   <option value="low">Low (96 kbps)</option>
@@ -353,7 +412,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.crossfade}
-                      onChange={(e) => handleSettingChange('crossfade', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("crossfade", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -368,7 +429,12 @@ const Settings = () => {
                     min="1"
                     max="12"
                     value={settings.crossfadeDuration}
-                    onChange={(e) => handleSettingChange('crossfadeDuration', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleSettingChange(
+                        "crossfadeDuration",
+                        parseInt(e.target.value)
+                      )
+                    }
                     className="setting-range"
                   />
                   <div className="range-labels">
@@ -391,7 +457,9 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.normalizeVolume}
-                      onChange={(e) => handleSettingChange('normalizeVolume', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange("normalizeVolume", e.target.checked)
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -400,15 +468,15 @@ const Settings = () => {
             </div>
           )}
 
-          {activeSection === 'appearance' && (
+          {activeSection === "appearance" && (
             <div className="settings-section">
               <h2>Appearance Settings</h2>
-              
+
               <div className="setting-group">
                 <label className="setting-label">Theme</label>
                 <select
                   value={settings.theme}
-                  onChange={(e) => handleSettingChange('theme', e.target.value)}
+                  onChange={(e) => handleSettingChange("theme", e.target.value)}
                   className="setting-select"
                 >
                   <option value="light">Light</option>
@@ -421,7 +489,9 @@ const Settings = () => {
                 <label className="setting-label">Language</label>
                 <select
                   value={settings.language}
-                  onChange={(e) => handleSettingChange('language', e.target.value)}
+                  onChange={(e) =>
+                    handleSettingChange("language", e.target.value)
+                  }
                   className="setting-select"
                 >
                   <option value="en">English</option>
@@ -443,7 +513,12 @@ const Settings = () => {
                     <input
                       type="checkbox"
                       checked={settings.reduceAnimations}
-                      onChange={(e) => handleSettingChange('reduceAnimations', e.target.checked)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "reduceAnimations",
+                          e.target.checked
+                        )
+                      }
                     />
                     <span className="slider"></span>
                   </label>
@@ -453,12 +528,12 @@ const Settings = () => {
           )}
 
           <div className="settings-actions">
-            <button 
+            <button
               onClick={handleSaveSettings}
-              className={`save-settings-btn ${saved ? 'saved' : ''}`}
+              className={`save-settings-btn ${saved ? "saved" : ""}`}
             >
               <FaSave />
-              {saved ? 'Settings Saved!' : 'Save Settings'}
+              {saved ? "Settings Saved!" : "Save Settings"}
             </button>
           </div>
         </div>

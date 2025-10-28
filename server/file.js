@@ -1,110 +1,95 @@
-import React, { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import axios from "axios";
-import { FaUpload, FaMusic, FaSpinner, FaCheck } from "react-icons/fa";
-import "./Upload.css";
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import { FaUpload, FaMusic, FaSpinner, FaCheck } from 'react-icons/fa';
+import './Upload.css';
 
 const Upload = () => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [formData, setFormData] = useState({
-    title: "",
-    artist: "",
-    album: "",
-    genre: "",
-    mood: "",
-    lyrics: "",
+    title: '',
+    artist: '',
+    album: '',
+    genre: '',
+    mood: '',
+    lyrics: '',
     releaseYear: new Date().getFullYear(),
   });
   const [selectedFile, setSelectedFile] = useState(null);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const genres = [
-    "Pop",
-    "Rock",
-    "Hip Hop",
-    "Jazz",
-    "Classical",
-    "Electronic",
-    "R&B",
-    "Country",
-  ];
-  const moods = ["happy", "sad", "energetic", "calm", "romantic", "focused"];
+  const genres = ['Pop', 'Rock', 'Hip Hop', 'Jazz', 'Classical', 'Electronic', 'R&B', 'Country', 'Amapiano', 'Reggae', 'Gqom'];
+  const moods = ['happy', 'sad', 'energetic', 'calm', 'romantic', 'focused'];
 
   const handleInputChange = (e) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     }));
   };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const allowedTypes = [
-        "audio/mpeg",
-        "audio/wav",
-        "audio/mp3",
-        "audio/ogg",
-        "audio/aac",
-      ];
+      // Basic validation for audio files
+      const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/aac'];
       if (!allowedTypes.includes(file.type)) {
-        setMessage("Please select a valid audio file (MP3, WAV, OGG, AAC)");
+        setMessage('Please select a valid audio file (MP3, WAV, OGG, AAC)');
         return;
       }
-
-      if (file.size > 50 * 1024 * 1024) {
-        setMessage("File size must be less than 50MB");
+      
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        setMessage('File size must be less than 50MB');
         return;
       }
 
       setSelectedFile(file);
-      setMessage("");
+      setMessage('');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     if (!user) {
-      setMessage("Please log in to upload songs");
+      setMessage('Please log in to upload songs');
       return;
     }
 
     if (!selectedFile) {
-      setMessage("Please select an audio file");
+      setMessage('Please select an audio file');
       return;
     }
 
     if (!formData.title || !formData.artist || !formData.genre) {
-      setMessage("Please fill in all required fields (Title, Artist, Genre)");
+      setMessage('Please fill in all required fields (Title, Artist, Genre)');
       return;
     }
 
     setUploading(true);
     setProgress(0);
-    setMessage("");
+    setMessage('');
     setUploadSuccess(false);
 
     const submitData = new FormData();
-    submitData.append("audio", selectedFile);
-    submitData.append("title", formData.title);
-    submitData.append("artist", formData.artist);
-    submitData.append("album", formData.album);
-    submitData.append("genre", formData.genre);
-    submitData.append("mood", formData.mood);
-    submitData.append("lyrics", formData.lyrics);
-    submitData.append("releaseYear", formData.releaseYear.toString());
-    submitData.append("userId", user.id); // Add user ID for tracking
+    submitData.append('audio', selectedFile);
+    submitData.append('title', formData.title);
+    submitData.append('artist', formData.artist);
+    submitData.append('album', formData.album);
+    submitData.append('genre', formData.genre);
+    submitData.append('mood', formData.mood);
+    submitData.append('lyrics', formData.lyrics);
+    submitData.append('releaseYear', formData.releaseYear.toString());
 
     try {
-      const response = await axios.post("/api/music/upload", submitData, {
+      const response = await axios.post('/api/music/upload', submitData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        timeout: 60000, // 60 second timeout
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round(
@@ -116,29 +101,38 @@ const Upload = () => {
       });
 
       if (response.data.success) {
-        setMessage("Song uploaded successfully!");
+        setMessage('Song uploaded successfully!');
         setUploadSuccess(true);
-
+        
         // Reset form
-        resetForm();
-
+        setFormData({
+          title: '',
+          artist: '',
+          album: '',
+          genre: '',
+          mood: '',
+          lyrics: '',
+          releaseYear: new Date().getFullYear(),
+        });
+        setSelectedFile(null);
+        document.getElementById('audio-file').value = '';
+        
+        // Reset success state after 3 seconds
         setTimeout(() => {
           setUploadSuccess(false);
           setProgress(0);
         }, 3000);
       } else {
-        setMessage(response.data.message || "Upload failed");
+        setMessage(response.data.message || 'Upload failed');
       }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error('Upload error:', error);
       if (error.response?.data?.message) {
         setMessage(error.response.data.message);
-      } else if (error.code === "ECONNABORTED") {
-        setMessage("Upload timeout. Please try again.");
-      } else if (error.message.includes("Network Error")) {
-        setMessage("Network error. Please check your connection.");
+      } else if (error.code === 'ECONNABORTED') {
+        setMessage('Upload timeout. Please try again.');
       } else {
-        setMessage("Upload failed. Please try again.");
+        setMessage('Upload failed. Please check your connection and try again.');
       }
     } finally {
       setUploading(false);
@@ -147,20 +141,20 @@ const Upload = () => {
 
   const resetForm = () => {
     setFormData({
-      title: "",
-      artist: "",
-      album: "",
-      genre: "",
-      mood: "",
-      lyrics: "",
+      title: '',
+      artist: '',
+      album: '',
+      genre: '',
+      mood: '',
+      lyrics: '',
       releaseYear: new Date().getFullYear(),
     });
     setSelectedFile(null);
-    setMessage("");
+    setMessage('');
     setUploadSuccess(false);
     setProgress(0);
-    const fileInput = document.getElementById("audio-file");
-    if (fileInput) fileInput.value = "";
+    const fileInput = document.getElementById('audio-file');
+    if (fileInput) fileInput.value = '';
   };
 
   if (!user) {
@@ -181,12 +175,12 @@ const Upload = () => {
         <div className="upload-header">
           <FaUpload className="upload-icon" />
           <h2>Upload New Song</h2>
-          <p>Share your music with the community</p>
+          <p>Share your music with the world</p>
         </div>
 
         {message && (
-          <div className={`message ${uploadSuccess ? "success" : "error"}`}>
-            {uploadSuccess && <FaCheck className="message-icon" />}
+          <div className={`message ${uploadSuccess ? 'success' : 'error'}`}>
+            {uploadSuccess ? <FaCheck className="message-icon" /> : null}
             {message}
           </div>
         )}
@@ -244,10 +238,8 @@ const Upload = () => {
                 disabled={uploading}
               >
                 <option value="">Select Genre</option>
-                {genres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
-                  </option>
+                {genres.map(genre => (
+                  <option key={genre} value={genre}>{genre}</option>
                 ))}
               </select>
             </div>
@@ -264,7 +256,7 @@ const Upload = () => {
                 disabled={uploading}
               >
                 <option value="">Select Mood</option>
-                {moods.map((mood) => (
+                {moods.map(mood => (
                   <option key={mood} value={mood}>
                     {mood.charAt(0).toUpperCase() + mood.slice(1)}
                   </option>
@@ -316,9 +308,7 @@ const Upload = () => {
                   <>
                     <FaMusic />
                     <span>{selectedFile.name}</span>
-                    <small>
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </small>
+                    <small>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</small>
                   </>
                 ) : (
                   <>
@@ -334,8 +324,8 @@ const Upload = () => {
           {uploading && (
             <div className="upload-progress">
               <div className="progress-bar">
-                <div
-                  className="progress-fill"
+                <div 
+                  className="progress-fill" 
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -344,8 +334,8 @@ const Upload = () => {
           )}
 
           <div className="form-actions">
-            <button
-              type="submit"
+            <button 
+              type="submit" 
               className="upload-button"
               disabled={uploading}
             >
@@ -361,9 +351,9 @@ const Upload = () => {
                 </>
               )}
             </button>
-
-            <button
-              type="button"
+            
+            <button 
+              type="button" 
               className="cancel-button"
               onClick={resetForm}
               disabled={uploading}
